@@ -1,0 +1,11 @@
+#fix bug where the last folder is not getting fully deleted....
+#update last scan time in settings table
+refine NZB result search
+clear downloaded_nzbs after successful download, and move to history table. ?? check
+add torrent searching for alternate to UseNet
+create playlist after new downloads
+finish web based front end
+web based add show, start from season 1 if blank
+ommit show from playlist
+multiple playlists
+email when new shows are downloaded
