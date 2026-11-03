@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">System Settings</h1>
+        <p class="text-sm text-slate-400 mt-1">Configure media storage paths, download client parameters, and daemon intervals</p>
+    </div>
+
+    <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-6">
+        <!-- Media Paths Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <span>📁</span>
+                <span>Directory Paths</span>
+            </h3>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Shows Media Directory</label>
+                <input type="text" id="shows_dir" value="{{ settings.shows_dir }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                <p class="text-[11px] text-slate-500 mt-1">Root location where TV shows and season folders are stored.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Completed Downloads Directory</label>
+                    <input type="text" id="completed_dir" value="{{ settings.completed_dir }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                    <p class="text-[11px] text-slate-500 mt-1">Folder where SABnzbd or downloader outputs finished files.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Watch / Blackhole Directory</label>
+                    <input type="text" id="watch_dir" value="{{ settings.watch_dir }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                    <p class="text-[11px] text-slate-500 mt-1">Folder monitored for new .nzb files.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">ASX Playlist Path</label>
+                    <input type="text" id="playlist_asx_path" value="{{ settings.playlist_asx_path }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">M3U8 Playlist Path</label>
+                    <input type="text" id="playlist_m3u8_path" value="{{ settings.playlist_m3u8_path }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Downloader Client Configuration -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <span>⚡</span>
+                    <span>Downloader Client</span>
+                </h3>
+                <button type="button" onclick="testDownloader()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                    Test Client Connection
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Downloader Type</label>
+                    <select id="dl_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-tentacle-500">
+                        <option value="sabnzbd" {% if settings.downloader.type.value == 'sabnzbd' %}selected{% endif %}>SABnzbd (JSON API)</option>
+                        <option value="blackhole" {% if settings.downloader.type.value == 'blackhole' %}selected{% endif %}>Blackhole (Watch Folder)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Host / IP</label>
+                    <input type="text" id="dl_host" value="{{ settings.downloader.host }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Port</label>
+                    <input type="number" id="dl_port" value="{{ settings.downloader.port }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">API Key</label>
+                    <input type="password" id="dl_api_key" value="{{ settings.downloader.api_key }}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-1">
+                <input type="checkbox" id="dl_use_ssl" {% if settings.downloader.use_ssl %}checked{% endif %} class="rounded bg-slate-800 border-slate-700 text-tentacle-600 focus:ring-tentacle-500 w-4 h-4" />
+                <label for="dl_use_ssl" class="text-xs text-slate-300">Use HTTPS / SSL for downloader connection</label>
+            </div>
+        </div>
+
+        <!-- Automation & Intervals -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <span>⏱️</span>
+                <span>Automation & Daemon Timing</span>
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Scan Interval (Seconds)</label>
+                    <input type="number" id="scan_interval" value="{{ settings.scan_interval }}" min="60" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+                    <p class="text-[11px] text-slate-500 mt-1">Default 3600s = 1 hour. Minimum 60s.</p>
+                </div>
+                <div class="flex items-center h-full pt-4">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="auto_search_missing" {% if settings.auto_search_missing %}checked{% endif %} class="rounded bg-slate-800 border-slate-700 text-tentacle-600 focus:ring-tentacle-500 w-4 h-4" />
+                        <span class="text-xs text-slate-200">Automatically search UseNet for missing episodes during scan</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+            <button type="submit" class="bg-tentacle-600 hover:bg-tentacle-500 text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition shadow">
+                Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function testDownloader() {
+        const payload = {
+            type: document.getElementById('dl_type').value,
+            host: document.getElementById('dl_host').value,
+            port: parseInt(document.getElementById('dl_port').value) || 8080,
+            api_key: document.getElementById('dl_api_key').value,
+            use_ssl: document.getElementById('dl_use_ssl').checked,
+            watch_dir: document.getElementById('watch_dir').value,
+            completed_dir: document.getElementById('completed_dir').value
+        };
+
+        showToast('Testing downloader connection...', 'info');
+        try {
+            const res = await fetch('/api/downloader/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        } catch (e) {
+            showToast('Connection test error', 'error');
+        }
+    }
+
+    async function saveSettings(e) {
+        e.preventDefault();
+        const payload = {
+            shows_dir: document.getElementById('shows_dir').value,
+            completed_dir: document.getElementById('completed_dir').value,
+            watch_dir: document.getElementById('watch_dir').value,
+            playlist_asx_path: document.getElementById('playlist_asx_path').value,
+            playlist_m3u8_path: document.getElementById('playlist_m3u8_path').value,
+            scan_interval: parseInt(document.getElementById('scan_interval').value) || 3600,
+            auto_search_missing: document.getElementById('auto_search_missing').checked,
+            downloader: {
+                type: document.getElementById('dl_type').value,
+                host: document.getElementById('dl_host').value,
+                port: parseInt(document.getElementById('dl_port').value) || 8080,
+                api_key: document.getElementById('dl_api_key').value,
+                use_ssl: document.getElementById('dl_use_ssl').checked,
+                watch_dir: document.getElementById('watch_dir').value,
+                completed_dir: document.getElementById('completed_dir').value
+            }
+        };
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                showToast('Settings saved successfully', 'success');
+            } else {
+                showToast('Failed to save settings', 'error');
+            }
+        } catch (err) {
+            showToast('Network error saving settings', 'error');
+        }
+    }
+</script>
+{% endblock %}

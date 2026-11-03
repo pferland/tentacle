@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Top Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Shows Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Shows</p>
+                    <h3 class="text-3xl font-extrabold text-white mt-1">{{ status.total_shows }}</h3>
+                    <p class="text-xs text-emerald-400 mt-1 font-medium">{{ status.active_shows }} active tracking</p>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-lg text-tentacle-400 text-2xl">📺</div>
+            </div>
+        </div>
+
+        <!-- Episodes Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Episodes Indexed</p>
+                    <h3 class="text-3xl font-extrabold text-white mt-1">{{ status.total_episodes }}</h3>
+                    <p class="text-xs text-slate-400 mt-1">Organized in media library</p>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-lg text-sky-400 text-2xl">🎬</div>
+            </div>
+        </div>
+
+        <!-- Pending Downloads Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Queue</p>
+                    <h3 class="text-3xl font-extrabold text-white mt-1">{{ status.pending_downloads }}</h3>
+                    <p class="text-xs text-amber-400 mt-1 font-medium">Pending downloader</p>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-lg text-amber-400 text-2xl">⬇️</div>
+            </div>
+        </div>
+
+        <!-- Indexers Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">UseNet Providers</p>
+                    <h3 class="text-3xl font-extrabold text-white mt-1">{{ status.configured_indexers }}</h3>
+                    <p class="text-xs text-emerald-400 mt-1">Configured & enabled</p>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-lg text-purple-400 text-2xl">🌐</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Operations Control Banner -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-white">Daemon Control & Operations</h2>
+            <p class="text-sm text-slate-400 mt-0.5">
+                Current status: <span class="font-semibold text-tentacle-400">{{ status.state }}</span> &bull; 
+                Last scanned: <span class="text-slate-300">{{ status.last_scan or 'Never' }}</span>
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="triggerScan()" class="bg-tentacle-600 hover:bg-tentacle-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition flex items-center space-x-1.5 shadow">
+                <span>🔄 Scan Library</span>
+            </button>
+            <button onclick="triggerSearch()" class="bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition flex items-center space-x-1.5 shadow">
+                <span>🔍 Search Missing</span>
+            </button>
+            <button onclick="triggerOrganize()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition flex items-center space-x-1.5 shadow">
+                <span>📁 Organize Downloads</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Shows & Recent Logs 2-Column Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recently Updated Shows -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-white">Tracked TV Shows</h3>
+                <a href="/shows" class="text-xs text-tentacle-400 hover:underline">View All &rarr;</a>
+            </div>
+            {% if shows %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase">
+                            <th class="py-2.5">Show Name</th>
+                            <th class="py-2.5">Status</th>
+                            <th class="py-2.5 text-right">Newest Episode</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        {% for show in shows[:8] %}
+                        <tr class="hover:bg-slate-800/40 transition">
+                            <td class="py-2.5 font-medium text-white">
+                                <a href="/shows/{{ show.id }}" class="hover:text-tentacle-400">{{ show.name }}</a>
+                            </td>
+                            <td class="py-2.5">
+                                {% if show.status.value == 'active' %}
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">Active</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">Ended / Dead</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 text-right text-slate-300 font-mono text-xs">
+                                {% if show.newest_season is not none and show.newest_episode is not none %}
+                                S{{ "%02d"|format(show.newest_season) }}E{{ "%02d"|format(show.newest_episode) }}
+                                {% else %}
+                                <span class="text-slate-500">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="py-12 text-center text-slate-500 text-sm">
+                <p>No television shows indexed yet.</p>
+                <p class="text-xs text-slate-600 mt-1">Configure your media directory in Settings and click Scan Now.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Activity Logs -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-white">Recent Activity</h3>
+                <a href="/logs" class="text-xs text-tentacle-400 hover:underline">View All &rarr;</a>
+            </div>
+            {% if logs %}
+            <div class="space-y-3 flex-1 overflow-y-auto max-h-[380px] pr-2">
+                {% for log in logs[:12] %}
+                <div class="text-xs p-2.5 rounded bg-slate-800/50 border border-slate-800 flex items-start space-x-2.5">
+                    <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] 
+                        {% if log.level == 'ERROR' %}bg-rose-950 text-rose-400 border border-rose-800
+                        {% elif log.level == 'WARNING' %}bg-amber-950 text-amber-400 border border-amber-800
+                        {% else %}bg-slate-700 text-slate-300{% endif %}">
+                        {{ log.level }}
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-slate-200 break-words">{{ log.message }}</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">{{ log.timestamp }} &bull; {{ log.category }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-12 text-center text-slate-500 text-sm">No activity recorded yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function triggerSearch() {
+        try {
+            const res = await fetch('/api/search', { method: 'POST' });
+            if (res.ok) {
+                showToast('Episode search initiated', 'success');
+            } else {
+                showToast('Search failed', 'error');
+            }
+        } catch (e) {
+            showToast('Network error triggering search', 'error');
+        }
+    }
+
+    async function triggerOrganize() {
+        try {
+            const res = await fetch('/api/organize', { method: 'POST' });
+            if (res.ok) {
+                showToast('Download post-processing initiated', 'success');
+            } else {
+                showToast('Organize failed', 'error');
+            }
+        } catch (e) {
+            showToast('Network error triggering organize', 'error');
+        }
+    }
+</script>
+{% endblock %}

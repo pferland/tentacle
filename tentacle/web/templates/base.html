@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tentacle V4{% endblock %} - TV Show Tracker & Organizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tentacle: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="flex items-center space-x-2 text-tentacle-500 hover:text-tentacle-400 font-bold text-xl tracking-tight">
+                    <span class="text-2xl">🐙</span>
+                    <span>Tentacle <span class="text-xs bg-tentacle-900 text-tentacle-300 px-2 py-0.5 rounded-full border border-tentacle-700">v4.0</span></span>
+                </a>
+                <span id="daemon-badge" class="ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="daemon-state">IDLE</span>
+                </span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex space-x-1">
+                <a href="/" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'dashboard' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">Dashboard</a>
+                <a href="/shows" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'shows' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">Shows</a>
+                <a href="/downloads" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'downloads' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">Downloads</a>
+                <a href="/indexers" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'indexers' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">UseNet Providers</a>
+                <a href="/settings" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'settings' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">Settings</a>
+                <a href="/logs" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 {% if page == 'logs' %}bg-slate-800 text-tentacle-400{% else %}text-slate-300{% endif %}">Logs</a>
+            </nav>
+
+            <!-- Quick Action Button -->
+            <div class="flex items-center space-x-2">
+                <button onclick="triggerScan()" class="bg-tentacle-600 hover:bg-tentacle-500 text-white text-xs font-semibold px-3 py-2 rounded-md transition shadow flex items-center space-x-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Scan Now</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        <p>Tentacle V4 &copy; 2010-2026 &bull; Released under GNU General Public License v3</p>
+    </footer>
+
+    <!-- Global Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2"></div>
+
+    <script>
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-emerald-800 border-emerald-600 text-white' :
+                       type === 'error' ? 'bg-rose-900 border-rose-700 text-white' :
+                       'bg-slate-800 border-slate-700 text-slate-200';
+            toast.className = `border px-4 py-3 rounded-lg shadow-lg text-sm transition-all transform duration-300 flex items-center space-x-2 ${bg}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        async function triggerScan() {
+            try {
+                const res = await fetch('/api/scan', { method: 'POST' });
+                if (res.ok) {
+                    showToast('Scan initiated in background', 'success');
+                    updateStatus();
+                } else {
+                    showToast('Failed to trigger scan', 'error');
+                }
+            } catch (err) {
+                showToast('Network error triggering scan', 'error');
+            }
+        }
+
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    const stateElem = document.getElementById('daemon-state');
+                    if (stateElem) stateElem.innerText = data.state;
+                }
+            } catch (e) {}
+        }
+        setInterval(updateStatus, 8000);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

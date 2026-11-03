@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ show.name }} - Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb & Back -->
+    <div>
+        <a href="/shows" class="text-xs text-tentacle-400 hover:underline flex items-center space-x-1 mb-2">
+            <span>&larr; Back to Shows Library</span>
+        </a>
+    </div>
+
+    <!-- Show Header Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">{{ show.name }}</h1>
+                {% if show.status.value == 'active' %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">Active Tracking</span>
+                {% else %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">Ended / Dead</span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-slate-400 font-mono mt-2 flex items-center space-x-1">
+                <span>📁</span>
+                <span>{{ show.path }}</span>
+            </p>
+            <div class="flex items-center space-x-6 mt-4 text-xs text-slate-300">
+                <div>
+                    <span class="text-slate-500">Episodes:</span> 
+                    <span class="font-bold text-white">{{ show.episode_count }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500">Latest Episode:</span> 
+                    <span class="font-bold text-tentacle-400 font-mono">
+                        {% if show.newest_season is not none and show.newest_episode is not none %}
+                        S{{ "%02d"|format(show.newest_season) }}E{{ "%02d"|format(show.newest_episode) }}
+                        {% else %}
+                        None
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button onclick="toggleShowStatus({{ show.id }}, '{{ 'ended' if show.status.value == 'active' else 'active' }}')" 
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg border border-slate-700 transition">
+                {{ 'Mark as Ended (Dead)' if show.status.value == 'active' else 'Mark as Active' }}
+            </button>
+            <button onclick="searchShow({{ show.id }})" class="bg-tentacle-600 hover:bg-tentacle-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow">
+                Search Next Episode
+            </button>
+        </div>
+    </div>
+
+    <!-- Episodes Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">Indexed Episodes</h3>
+            <span class="text-xs text-slate-400">{{ episodes|length }} episode(s) found</span>
+        </div>
+        {% if episodes %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-800/80 text-xs text-slate-400 uppercase border-b border-slate-700">
+                    <tr>
+                        <th class="px-6 py-3">Episode</th>
+                        <th class="px-6 py-3">File Name</th>
+                        <th class="px-6 py-3">Size</th>
+                        <th class="px-6 py-3">File Path</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80">
+                    {% for ep in episodes %}
+                    <tr class="hover:bg-slate-800/40 transition font-mono text-xs">
+                        <td class="px-6 py-3.5 font-bold text-tentacle-400">
+                            S{{ "%02d"|format(ep.season) }}E{{ "%02d"|format(ep.episode) }}
+                        </td>
+                        <td class="px-6 py-3.5 text-white font-sans">
+                            {{ ep.file_name }}
+                        </td>
+                        <td class="px-6 py-3.5 text-slate-300">
+                            {{ "%.1f"|format(ep.file_size / (1024 * 1024)) }} MB
+                        </td>
+                        <td class="px-6 py-3.5 text-slate-400 truncate max-w-sm" title="{{ ep.file_path }}">
+                            {{ ep.file_path }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-12 text-center text-slate-500 text-sm">
+            No episode files indexed for this show.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function toggleShowStatus(showId, newStatus) {
+        try {
+            const res = await fetch(`/api/shows/${showId}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                showToast(`Status updated to ${newStatus}`, 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        } catch (e) {
+            showToast('Error updating status', 'error');
+        }
+    }
+
+    async function searchShow(showId) {
+        try {
+            showToast('Searching for next episode...', 'info');
+            const res = await fetch(`/api/shows/${showId}/search`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                showToast(data.message, 'success');
+            } else {
+                showToast('No matching release found', 'error');
+            }
+        } catch (e) {
+            showToast('Search request error', 'error');
+        }
+    }
+</script>
+{% endblock %}
