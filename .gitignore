@@ -35,6 +35,8 @@ htmlcov/
 
 # Local databases and runtime state
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 *.log
 tentacle.pid
