@@ -45,6 +45,7 @@ class DownloaderType(str, Enum):
 class IndexerType(str, Enum):
     NEWZNAB = "newznab"
     TORZNAB = "torznab"
+    EASYNEWS = "easynews"
 
 
 class Episode(BaseModel):

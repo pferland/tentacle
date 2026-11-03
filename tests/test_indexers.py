@@ -6,10 +6,15 @@ from tentacle.models import IndexerConfig
 
 
 def test_presets():
-    assert len(INDEXER_PRESETS) >= 6
+    assert len(INDEXER_PRESETS) >= 7
     geek = get_preset_by_id("nzbgeek")
     assert geek is not None
     assert "nzbgeek.info" in geek.default_url
+
+    easynews = get_preset_by_id("easynews")
+    assert easynews is not None
+    assert "easynews.com" in easynews.default_url
+    assert easynews.indexer_type == "easynews"
 
     custom = get_preset_by_id("custom")
     assert custom is not None

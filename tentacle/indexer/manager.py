@@ -22,8 +22,9 @@ import logging
 from typing import List, Optional, Tuple
 
 from tentacle.database import Database
+from tentacle.indexer.easynews import EasyNewsClient
 from tentacle.indexer.newznab import NewznabClient
-from tentacle.models import IndexerConfig, IndexerSearchResult
+from tentacle.models import IndexerConfig, IndexerSearchResult, IndexerType
 
 logger = logging.getLogger("tentacle.indexer")
 
@@ -34,8 +35,14 @@ class IndexerManager:
     def __init__(self, db: Database) -> None:
         self.db = db
 
-    def get_client(self, config: IndexerConfig) -> NewznabClient:
+    def get_client(self, config: IndexerConfig):
         """Create a client for the given indexer."""
+        if (
+            config.type == IndexerType.EASYNEWS
+            or "easynews" in config.name.lower()
+            or "easynews.com" in config.url.lower()
+        ):
+            return EasyNewsClient(config)
         return NewznabClient(config)
 
     async def test_indexer(self, config: IndexerConfig) -> Tuple[bool, str]:
@@ -100,6 +107,8 @@ class IndexerManager:
 
         client = self.get_client(indexer)
         try:
+            if isinstance(client, EasyNewsClient):
+                return await client.download_file(nzb_url)
             return await client.download_nzb(nzb_url)
         except Exception as e:
             self.db.log("ERROR", "indexer", f"Failed downloading NZB from {indexer.name}: {e}")

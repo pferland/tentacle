@@ -97,12 +97,14 @@
             <select id="modal-preset" onchange="onPresetSelected()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-tentacle-500">
                 <option value="">-- Choose a Preset or Custom --</option>
                 {% for preset in presets %}
-                <option value="{{ preset.id }}" data-name="{{ preset.name }}" data-url="{{ preset.default_url }}" data-cats="{{ preset.default_categories }}">
+                <option value="{{ preset.id }}" data-name="{{ preset.name }}" data-url="{{ preset.default_url }}" data-cats="{{ preset.default_categories }}" data-type="{{ preset.indexer_type }}">
                     {{ preset.name }} ({{ preset.default_url }})
                 </option>
                 {% endfor %}
             </select>
         </div>
+
+        <input type="hidden" id="modal-type" value="newznab" />
 
         <!-- Provider Name -->
         <div>
@@ -118,8 +120,9 @@
 
         <!-- API Key -->
         <div>
-            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">API Key</label>
+            <label id="modal-apikey-label" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">API Key</label>
             <input type="password" id="modal-apikey" placeholder="Enter provider API key" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-tentacle-500" />
+            <p id="modal-apikey-help" class="text-[11px] text-tentacle-400 mt-1 hidden"></p>
         </div>
 
         <!-- Categories & Priority Row -->
@@ -166,15 +169,32 @@
         const select = document.getElementById('modal-preset');
         const opt = select.options[select.selectedIndex];
         if (opt && opt.value) {
+            const indexerType = opt.getAttribute('data-type') || 'newznab';
+            document.getElementById('modal-type').value = indexerType;
             document.getElementById('modal-name').value = opt.getAttribute('data-name');
             document.getElementById('modal-url').value = opt.getAttribute('data-url');
             document.getElementById('modal-cats').value = opt.getAttribute('data-cats');
+
+            const keyLabel = document.getElementById('modal-apikey-label');
+            const keyInput = document.getElementById('modal-apikey');
+            const keyHelp = document.getElementById('modal-apikey-help');
+            if (indexerType === 'easynews') {
+                keyLabel.innerText = 'Account Credentials (username:password)';
+                keyInput.placeholder = 'username:password';
+                keyHelp.innerText = 'EasyNews uses HTTP Basic Auth. Enter your username and password separated by a colon.';
+                keyHelp.classList.remove('hidden');
+            } else {
+                keyLabel.innerText = 'API Key';
+                keyInput.placeholder = 'Enter provider API key';
+                keyHelp.classList.add('hidden');
+            }
         }
     }
 
     async function testModalConnection() {
         const url = document.getElementById('modal-url').value.trim();
         const apiKey = document.getElementById('modal-apikey').value.trim();
+        const indexerType = document.getElementById('modal-type').value;
         if (!url) {
             showToast('Please enter an API URL to test', 'error');
             return;
@@ -184,7 +204,7 @@
             const res = await fetch('/api/indexers/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url, api_key: apiKey, name: 'Test' })
+                body: JSON.stringify({ url: url, api_key: apiKey, name: 'Test', type: indexerType })
             });
             const data = await res.json();
             if (data.success) {
@@ -218,6 +238,7 @@
         const apiKey = document.getElementById('modal-apikey').value.trim();
         const cats = document.getElementById('modal-cats').value.trim();
         const priority = parseInt(document.getElementById('modal-priority').value) || 1;
+        const indexerType = document.getElementById('modal-type').value;
 
         if (!name || !url) {
             showToast('Provider Name and API URL are required', 'error');
@@ -230,6 +251,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: name,
+                    type: indexerType,
                     url: url,
                     api_key: apiKey,
                     category_id: cats,

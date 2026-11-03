@@ -27,9 +27,19 @@ class PresetIndexer(BaseModel):
     description: str
     requires_api_key: bool = True
     default_categories: str = "5000,5030,5040"
+    indexer_type: str = "newznab"
 
 
 INDEXER_PRESETS: List[PresetIndexer] = [
+    PresetIndexer(
+        id="easynews",
+        name="EasyNews (Global Web Search)",
+        default_url="https://members.easynews.com/2.0/search/solr-search/advanced",
+        description="EasyNews direct web search. Enter username:password in API Key field.",
+        requires_api_key=True,
+        default_categories="VIDEO",
+        indexer_type="easynews",
+    ),
     PresetIndexer(
         id="nzbgeek",
         name="NZBGeek",
