@@ -45,3 +45,39 @@ def test_easynews_rss_parser():
     assert results[0].size == 2147483648
     assert results[0].season == 2
     assert results[0].episode == 1
+
+
+@pytest.mark.asyncio
+async def test_easynews_test_connection_no_search_handling(monkeypatch):
+    config = IndexerConfig(
+        name="EasyNews",
+        type=IndexerType.EASYNEWS,
+        url="https://members.easynews.com/2.0/search/solr-search/advanced",
+        api_key="validuser:validpass",
+    )
+    client = EasyNewsClient(config)
+
+    # Mock response returning HTTP 200 with "No search"
+    class MockResponse:
+        status_code = 200
+        text = "No search"
+
+    class MockAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def get(self, *args, **kwargs):
+            return MockResponse()
+
+    import httpx
+    monkeypatch.setattr(httpx, "AsyncClient", MockAsyncClient)
+
+    ok, msg = await client.test_connection()
+    assert ok is True
+    assert "Successfully authenticated" in msg

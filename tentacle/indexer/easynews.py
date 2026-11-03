@@ -61,8 +61,10 @@ class EasyNewsClient:
         test_params = {
             "st": "adv",
             "safeO": "1",
+            "sb": "1",
             "pby": "1",
             "sS": "5",
+            "q": "test",
         }
 
         try:
@@ -72,7 +74,7 @@ class EasyNewsClient:
                 )
                 if resp.status_code == 200:
                     text = resp.text.lower()
-                    if "<rss" in text or "<channel>" in text or "<html" in text:
+                    if "<rss" in text or "<channel>" in text or "<html" in text or "no search" in text:
                         return True, f"Successfully authenticated with EasyNews as '{self.username}'."
                     return False, f"Unexpected response from EasyNews: {resp.text[:120]}"
                 elif resp.status_code in (401, 403):
