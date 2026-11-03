@@ -39,6 +39,9 @@ htmlcov/
 *.db-shm
 *.sqlite3
 *.log
+*.key
+.tentacle.key
+tentacle.key
 tentacle.pid
 Shows.asx
 Shows.m3u8

@@ -25,6 +25,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from tentacle.crypto import CryptoManager
 from tentacle.models import (
     AppSettings,
     DownloadRecord,
@@ -41,8 +42,14 @@ from tentacle.models import (
 class Database:
     """Thread-safe SQLite database manager for Tentacle."""
 
-    def __init__(self, db_path: str = "tentacle.db") -> None:
+    def __init__(self, db_path: str = "tentacle.db", key_path: str = "tentacle.key") -> None:
         self.db_path = os.path.abspath(db_path)
+        if key_path == "tentacle.key":
+            db_dir = os.path.dirname(self.db_path)
+            self.key_path = os.path.join(db_dir, "tentacle.key")
+        else:
+            self.key_path = os.path.abspath(key_path)
+        self.crypto = CryptoManager(self.key_path)
         self._local = threading.local()
         self._lock = threading.Lock()
         self._init_db()
@@ -180,6 +187,11 @@ class Database:
         if row and row["value"]:
             try:
                 data = json.loads(row["value"])
+                # Decrypt downloader api_key if present
+                if "downloader" in data and "api_key" in data["downloader"]:
+                    data["downloader"]["api_key"] = self.crypto.decrypt(
+                        data["downloader"]["api_key"]
+                    )
                 return AppSettings(**data)
             except Exception:
                 pass
@@ -189,11 +201,16 @@ class Database:
         return default_settings
 
     def save_settings(self, settings: AppSettings) -> None:
-        """Persist application settings."""
+        """Persist application settings with encrypted downloader credentials."""
         with self._lock:
             conn = self._get_connection()
             cur = conn.cursor()
-            payload = settings.model_dump_json()
+            dump = settings.model_dump()
+            if "downloader" in dump and "api_key" in dump["downloader"]:
+                dump["downloader"]["api_key"] = self.crypto.encrypt(
+                    dump["downloader"]["api_key"]
+                )
+            payload = json.dumps(dump)
             cur.execute(
                 "INSERT INTO settings (key, value) VALUES ('app_settings', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -437,7 +454,7 @@ class Database:
     # --- Indexers ---
 
     def get_indexers(self, enabled_only: bool = False) -> List[IndexerConfig]:
-        """Fetch all configured indexers."""
+        """Fetch all configured indexers with decrypted API credentials."""
         conn = self._get_connection()
         cur = conn.cursor()
         if enabled_only:
@@ -453,7 +470,7 @@ class Database:
                 name=r["name"],
                 type=IndexerType(r["type"]),
                 url=r["url"],
-                api_key=r["api_key"],
+                api_key=self.crypto.decrypt(r["api_key"]),
                 category_id=r["category_id"],
                 enabled=bool(r["enabled"]),
                 priority=r["priority"],
@@ -462,7 +479,7 @@ class Database:
         ]
 
     def get_indexer(self, indexer_id: int) -> Optional[IndexerConfig]:
-        """Fetch indexer by ID."""
+        """Fetch indexer by ID with decrypted API credentials."""
         conn = self._get_connection()
         cur = conn.cursor()
         cur.execute("SELECT * FROM indexers WHERE id = ?", (indexer_id,))
@@ -474,14 +491,15 @@ class Database:
             name=r["name"],
             type=IndexerType(r["type"]),
             url=r["url"],
-            api_key=r["api_key"],
+            api_key=self.crypto.decrypt(r["api_key"]),
             category_id=r["category_id"],
             enabled=bool(r["enabled"]),
             priority=r["priority"],
         )
 
     def save_indexer(self, indexer: IndexerConfig) -> IndexerConfig:
-        """Insert or update indexer."""
+        """Insert or update indexer with credentials encrypted at rest."""
+        encrypted_api_key = self.crypto.encrypt(indexer.api_key)
         with self._lock:
             conn = self._get_connection()
             cur = conn.cursor()
@@ -502,7 +520,7 @@ class Database:
                         indexer.name,
                         indexer.type.value,
                         indexer.url,
-                        indexer.api_key,
+                        encrypted_api_key,
                         indexer.category_id,
                         1 if indexer.enabled else 0,
                         indexer.priority,
@@ -520,7 +538,7 @@ class Database:
                         indexer.name,
                         indexer.type.value,
                         indexer.url,
-                        indexer.api_key,
+                        encrypted_api_key,
                         indexer.category_id,
                         1 if indexer.enabled else 0,
                         indexer.priority,

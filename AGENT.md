@@ -113,7 +113,7 @@ V4 replaces serialized PHP blobs with a normalized relational schema:
 4. **`indexers`**:
    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
    - `name TEXT NOT NULL`, `type TEXT NOT NULL DEFAULT 'newznab'`
-   - `url TEXT NOT NULL`, `api_key TEXT NOT NULL`
+   - `url TEXT NOT NULL`, `api_key TEXT NOT NULL` *(Encrypted at rest using Fernet)*
    - `category_id TEXT NOT NULL DEFAULT '5000,5030,5040'`
    - `enabled INTEGER NOT NULL DEFAULT 1`, `priority INTEGER NOT NULL DEFAULT 1`
 5. **`downloads`**:
@@ -126,6 +126,12 @@ V4 replaces serialized PHP blobs with a normalized relational schema:
 6. **`logs`**:
    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
    - `timestamp TEXT NOT NULL`, `level TEXT NOT NULL`, `category TEXT NOT NULL`, `message TEXT NOT NULL`
+
+### Encryption at Rest (`tentacle.key`)
+- Sensitive credentials (e.g. EasyNews `username:password`, Newznab API keys, and SABnzbd API keys) are encrypted using AES-128-CBC + HMAC-SHA256 (`Fernet`) via `tentacle.crypto.CryptoManager`.
+- In SQLite, values are stored prefixed with `enc:`.
+- The key is stored locally in `tentacle.key` with restricted permissions (`0600` - owner only).
+- `tentacle.key` is ignored by Git (`.gitignore`) and never committed to version control.
 
 ---
 
