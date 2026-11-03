@@ -93,9 +93,9 @@ async def page_dashboard(request: Request):
     shows = db.get_shows()
     logs = db.get_logs(limit=25)
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+        request=request,
+        name="dashboard.html",
+        context={
             "page": "dashboard",
             "status": status,
             "shows": shows,
@@ -108,9 +108,9 @@ async def page_dashboard(request: Request):
 async def page_shows(request: Request):
     shows = db.get_shows()
     return templates.TemplateResponse(
-        "shows.html",
-        {
-            "request": request,
+        request=request,
+        name="shows.html",
+        context={
             "page": "shows",
             "shows": shows,
         },
@@ -124,9 +124,9 @@ async def page_show_detail(request: Request, show_id: int):
         raise HTTPException(status_code=404, detail="Show not found")
     episodes = db.get_episodes(show_id=show_id)
     return templates.TemplateResponse(
-        "show_detail.html",
-        {
-            "request": request,
+        request=request,
+        name="show_detail.html",
+        context={
             "page": "shows",
             "show": show,
             "episodes": episodes,
@@ -138,9 +138,9 @@ async def page_show_detail(request: Request, show_id: int):
 async def page_indexers(request: Request):
     indexers = db.get_indexers()
     return templates.TemplateResponse(
-        "indexers.html",
-        {
-            "request": request,
+        request=request,
+        name="indexers.html",
+        context={
             "page": "indexers",
             "indexers": indexers,
             "presets": INDEXER_PRESETS,
@@ -152,9 +152,9 @@ async def page_indexers(request: Request):
 async def page_downloads(request: Request):
     downloads = db.get_downloads(limit=100)
     return templates.TemplateResponse(
-        "downloads.html",
-        {
-            "request": request,
+        request=request,
+        name="downloads.html",
+        context={
             "page": "downloads",
             "downloads": downloads,
         },
@@ -165,9 +165,9 @@ async def page_downloads(request: Request):
 async def page_settings(request: Request):
     settings = db.get_settings()
     return templates.TemplateResponse(
-        "settings.html",
-        {
-            "request": request,
+        request=request,
+        name="settings.html",
+        context={
             "page": "settings",
             "settings": settings,
         },
@@ -178,9 +178,9 @@ async def page_settings(request: Request):
 async def page_logs(request: Request):
     logs = db.get_logs(limit=150)
     return templates.TemplateResponse(
-        "logs.html",
-        {
-            "request": request,
+        request=request,
+        name="logs.html",
+        context={
             "page": "logs",
             "logs": logs,
         },
