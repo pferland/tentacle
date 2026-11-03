@@ -123,13 +123,37 @@ async def page_show_detail(request: Request, show_id: int):
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
     episodes = db.get_episodes(show_id=show_id)
+
+    # Group episodes cleanly by season
+    seasons_map: Dict[int, Dict[str, Any]] = {}
+    total_bytes = 0
+    for ep in episodes:
+        total_bytes += ep.file_size
+        if ep.season not in seasons_map:
+            seasons_map[ep.season] = {
+                "season": ep.season,
+                "episodes": [],
+                "total_size": 0,
+            }
+        seasons_map[ep.season]["episodes"].append(ep)
+        seasons_map[ep.season]["total_size"] += ep.file_size
+
+    # Sort episodes ascending within each season
+    for s_info in seasons_map.values():
+        s_info["episodes"].sort(key=lambda x: x.episode)
+
+    # Sort seasons descending (newest season first)
+    sorted_seasons = [seasons_map[k] for k in sorted(seasons_map.keys(), reverse=True)]
+
     return templates.TemplateResponse(
         request=request,
         name="show_detail.html",
         context={
             "page": "shows",
             "show": show,
-            "episodes": episodes,
+            "seasons": sorted_seasons,
+            "total_size": total_bytes,
+            "total_seasons": len(seasons_map),
         },
     )
 

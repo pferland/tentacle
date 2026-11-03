@@ -49,8 +49,12 @@
                             </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-slate-300">
-                            {{ show.episode_count }}
+                        <td class="px-6 py-4">
+                            <span class="text-slate-200 font-semibold">{{ show.episode_count }}</span>
+                            <span class="text-xs text-slate-400">episodes</span>
+                            {% if show.newest_season is not none %}
+                            <span class="text-[11px] text-slate-500 block">{{ show.newest_season }} season{% if show.newest_season != 1 %}s{% endif %}</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 font-mono text-xs text-tentacle-400">
                             {% if show.newest_season is not none and show.newest_episode is not none %}
