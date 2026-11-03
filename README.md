@@ -90,6 +90,29 @@ From the **Settings** tab:
 
 ---
 
+## Running as a Systemd Service
+
+Tentacle includes a pre-configured unit file [`tentacle.service`](tentacle.service) for continuous background execution:
+
+```bash
+# 1. Copy the service unit to systemd directory
+sudo cp tentacle.service /etc/systemd/system/
+
+# 2. Reload systemd daemon
+sudo systemctl daemon-reload
+
+# 3. Enable service to start automatically on boot and start it now
+sudo systemctl enable --now tentacle.service
+
+# 4. Check status
+sudo systemctl status tentacle.service
+
+# 5. View live logs
+journalctl -u tentacle.service -f
+```
+
+---
+
 ## License
 
 This project is licensed under the **GNU General Public License v3 (GPLv3)**. See [LICENSE](LICENSE) for details.

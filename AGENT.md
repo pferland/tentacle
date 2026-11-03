@@ -179,7 +179,76 @@ The command-line interface is available via `tentacle` (or `python -m tentacle`)
 
 ---
 
-## 7. Historical Context & Legacy Architecture (V2 / V3)
+## 7. Systemd Service Management
+
+Tentacle includes a pre-configured unit file [`tentacle.service`](tentacle.service):
+
+```ini
+[Unit]
+Description=Tentacle V4 - TV Show Tracker, Downloader & Media Organizer
+After=network.target
+
+[Service]
+Type=simple
+User=pferland
+WorkingDirectory=/storage/files/GitHub/tenticle
+ExecStart=/storage/files/GitHub/tenticle/.venv/bin/python3 -m tentacle web --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=10
+```
+
+Commands to manage:
+```bash
+sudo cp tentacle.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now tentacle.service
+sudo systemctl status tentacle.service
+journalctl -u tentacle.service -f
+```
+
+---
+
+## 8. Unit & Integration Test Coverage
+
+The automated test suite in `tests/` covers all core subsystems:
+
+1. **`test_parser.py`**:
+   - `test_is_media_file`: Confirms video extension detection (`.mkv`, `.mp4`, `.avi`) and rejection of junk metadata (`.nfo`, `.par2`, `.sfv`, images).
+   - `test_parse_season_episode`: Tests regex parsing of season/episode numbers across varied formats (`S01E02`, `1x02`, `Season 1 Episode 4`) and verifies non-episode titles are rejected.
+   - `test_extract_season_from_folder`: Tests extracting season numbers from parent folders (`Season 1`, `Season 02`, `S4`).
+
+2. **`test_database.py`**:
+   - `test_settings_crud`: Validates SQLite JSON serialization and retrieval of application settings.
+   - `test_shows_and_episodes`: Validates show upsert, episode sync, automated resolution of newest season/episode, and status toggles (`active` vs `ended`).
+   - `test_indexers_crud`: Tests CRUD operations on UseNet indexer records.
+   - `test_downloads_and_logs`: Tests tracking download records through their lifecycle and querying audit logs.
+
+3. **`test_scanner.py`**:
+   - `test_library_scanner`: Scans a simulated filesystem containing multiple shows. Validates episode indexing, latest episode identification, and verifies that encountering `dead.txt` ("hes dead jim") automatically marks the show as `ENDED`.
+
+4. **`test_organizer.py`**:
+   - `test_media_organizer`: Simulates post-processing an unpacked download release directory with video and junk files (`.nfo`, `.sfv`). Verifies moving the video into `Shows/Show/Season X/`, safely deleting the temporary unpacked directory, and updating the download record status to `IMPORTED`.
+
+5. **`test_playlist.py`**:
+   - `test_playlist_generator`: Tests generating both Windows Media ASX v3.0 XML (`Shows.asx`) and modern extended M3U8 (`Shows.m3u8`) playlists.
+
+6. **`test_indexers.py`**:
+   - `test_presets`: Verifies provider preset definitions (NZBGeek, DogNZB, DrunkenSlug, Prowlarr, etc.).
+   - `test_newznab_xml_parser` & `test_newznab_json_parser`: Verifies parsing of Newznab XML/RSS and JSON payloads for title, release size, and download link.
+
+7. **`test_downloader.py`**:
+   - `test_blackhole_downloader`: Verifies writing NZB payloads to watch folders, checking queue busy state while files are pending, and reporting idle once files are picked up.
+   - `test_sabnzbd_instance`: Verifies SABnzbd client construction and parameter formatting.
+
+8. **`test_web_api.py`**:
+   - `test_api_status`: Tests `/api/status` endpoint for daemon status and counts.
+   - `test_api_shows`: Tests `/api/shows` listing.
+   - `test_api_indexers`: Tests creating, listing, toggling, and deleting indexers via the REST API.
+   - `test_api_settings`: Tests `/api/settings` endpoint.
+
+---
+
+## 9. Historical Context & Legacy Architecture (V2 / V3)
 
 The legacy PHP code has been organized into `legacy/` for historical reference:
 - **`legacy/tentacle_old.php`** (v2.0): File-based state in `arrays/*.txt`.

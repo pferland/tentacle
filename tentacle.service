@@ -1,0 +1,20 @@
+[Unit]
+Description=Tentacle V4 - TV Show Tracker, Downloader & Media Organizer
+After=network.target
+
+[Service]
+Type=simple
+User=pferland
+Group=pferland
+WorkingDirectory=/storage/files/GitHub/tenticle
+ExecStart=/storage/files/GitHub/tenticle/.venv/bin/python3 -m tentacle web --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+# Security & Sandbox guidelines
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
