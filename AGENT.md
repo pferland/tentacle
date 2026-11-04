@@ -187,29 +187,45 @@ The command-line interface is available via `tentacle` (or `python -m tentacle`)
 
 ## 7. Systemd Service Management
 
-Tentacle includes a pre-configured unit file [`tentacle.service`](tentacle.service):
+Tentacle is deployed on `192.168.1.4` (`app64.home.randomintervals.com`) with an Apache HTTPS reverse proxy at [`tenticle.home.randomintervals.com`](https://tenticle.home.randomintervals.com).
+
+Systemd unit installed at `/etc/systemd/system/tentacle.service`:
 
 ```ini
 [Unit]
-Description=Tentacle V4 - TV Show Tracker, Downloader & Media Organizer
-After=network.target
+Description=Tentacle V4 Media Automation Service (Port 8085)
+After=network-online.target apache2.service
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=pferland
-WorkingDirectory=/storage/files/GitHub/tenticle
-ExecStart=/storage/files/GitHub/tenticle/.venv/bin/python3 -m tentacle web --host 0.0.0.0 --port 8080
+Group=pferland
+WorkingDirectory=/opt/tentacle
+ExecStart=/opt/tentacle/.venv/bin/python -m tentacle web --host 127.0.0.1 --port 8085
 Restart=always
-RestartSec=10
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tentacle
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-Commands to manage:
+Apache reverse proxy configured at `/etc/apache2/sites-available/050-tenticle.home.randomintervals.com.conf`:
+- **SSL Certificates**: Issued via Certbot and Smallstep CA at `/etc/letsencrypt/live/tenticle.home.randomintervals.com/`.
+- **DNS**: Configured in BIND 9 on `192.168.1.3` (`tenticle.home.randomintervals.com` & `tentacle.home.randomintervals.com`).
+- **Proxy target**: `http://127.0.0.1:8085/` with WebSocket upgrade support.
+
+Commands to manage on `192.168.1.4`:
 ```bash
-sudo cp tentacle.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now tentacle.service
 sudo systemctl status tentacle.service
-journalctl -u tentacle.service -f
+sudo journalctl -u tentacle.service -f
+sudo systemctl restart tentacle.service
 ```
 
 ---

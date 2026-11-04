@@ -1,20 +1,22 @@
 [Unit]
-Description=Tentacle V4 - TV Show Tracker, Downloader & Media Organizer
-After=network.target
+Description=Tentacle V4 - TV Show Tracker, Downloader & Media Organizer (Port 8085)
+After=network-online.target apache2.service
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=pferland
 Group=pferland
-WorkingDirectory=/storage/files/GitHub/tenticle
-ExecStart=/storage/files/GitHub/tenticle/.venv/bin/python3 -m tentacle web --host 0.0.0.0 --port 8080
+WorkingDirectory=/opt/tentacle
+ExecStart=/opt/tentacle/.venv/bin/python -m tentacle web --host 127.0.0.1 --port 8085
 Restart=always
-RestartSec=10
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tentacle
 Environment=PYTHONUNBUFFERED=1
-
-# Security & Sandbox guidelines
-NoNewPrivileges=true
-PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
